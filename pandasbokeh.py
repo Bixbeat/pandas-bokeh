@@ -117,6 +117,8 @@ unique_station_numbers = get_unique_stations(file_name)
 save_map = True
 weather_stations_map = folium.Map(location=[52.092560, 5.109378],zoom_start = 7)
 
+unique_station_numbers = ['225']
+
 for station_number in unique_station_numbers:
     #Get data for unique station numbers
     loaded_data = load_weather_data(file_name, station_number)
