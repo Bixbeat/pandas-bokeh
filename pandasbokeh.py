@@ -111,13 +111,11 @@ unique_station_numbers = get_unique_stations(file_name)
 #Gathers data using SQL queries which is then added to the markers
 
 #Variable for testing. Comment out to loop over the entire set
-#unique_station_numbers = ['225']
+unique_station_numbers = ['225']
 
 #Initialize weather station map
 save_map = True
 weather_stations_map = folium.Map(location=[52.092560, 5.109378],zoom_start = 7)
-
-unique_station_numbers = ['225']
 
 for station_number in unique_station_numbers:
     #Get data for unique station numbers
@@ -141,31 +139,33 @@ for station_number in unique_station_numbers:
     
     #Get temperature difference between two dates for each row in the weather_DF dataframe
     sql = """
-            SELECT day1.YYYYMMDD, day1.ID, (day1.TG/10) as day1temp, (day2.TG/10) as day2temp, IFNULL((day1.TG - day2.TG)/10, 0) AS difference
-            FROM weather_DF as day1
+            SELECT day1.YYYYMMDD, day1.ID, (day1.TG/10) AS day1temp, (day2.TG/10) AS day2temp, IFNULL(CAST(day1.TG - day2.TG AS float)/10, 0) AS difference
+            FROM weather_DF AS day1
                 JOIN weather_DF day2 ON day1.STN = day2.STN AND day2.ID - day1.ID == 1
           """
     tempdif_DF = perform_SQL(sql)
     tempdif_DF['YYYYMMDD'] = tempdif_DF['YYYYMMDD'].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))    
-    biggest_tempdif_value = max(tempdif_DF["difference"])
+    biggest_tempdif_value = max(tempdif_DF['difference'])
 
     try:
-        highest_tempdif_row = tempdif_DF.loc[tempdif_DF["difference"] == biggest_tempdif_value]
-        highest_tempdif_date = str(highest_tempdif_row.iloc[0][0])#[:10] #Slicing to avert uncessesary 
-
+        highest_tempdif_row = tempdif_DF.loc[tempdif_DF['difference'] == biggest_tempdif_value]
+        highest_tempdif_date = str(highest_tempdif_row.iloc[0][0])
     except:
         biggest_tempdif_formatted = "no data"
         highest_tempdif_date = "no data"
     
     #Draw simple plot for temperature data
     #Create spectral colour palette column (http://bokeh.pydata.org/en/latest/docs/gallery/elements.html)
-    differences = tempdif_DF["difference"]
+    differences = tempdif_DF['difference']
     palette = ["#053061", "#2166ac", "#4393c3", "#92c5de", "#d1e5f0",
                "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#67001f"]
     lower_bound = min(differences)
     upper_bound = max(differences)
-    diff_colours = [int(10*(value - lower_bound)/(upper_bound - lower_bound)) for value in differences] #gives items in colors a value from 0-10
-    tempdif_DF["colours"] = [palette[i] for i in diff_colours]
+    if lower_bound != 0 and upper_bound !=0:
+        diff_colours = [int(10*(value - lower_bound)/(upper_bound - lower_bound)) for value in differences]
+        tempdif_DF['colours'] = [palette[i] for i in diff_colours]
+    else:
+        tempdif_DF['colours'] = palette[0]
     
     #Configure the hover tool
     hover = HoverTool(tooltips=[("Temp. difference", "@y{2.2}")])
@@ -175,7 +175,7 @@ for station_number in unique_station_numbers:
     temp_dif_graph = figure(title = "temp. change at station {}".format(station_number),\
         x_axis_label = 'year', y_axis_label = 'temperature difference', tools = tools)
 
-    temp_dif_graph.circle(tempdif_DF["YYYYMMDD"], tempdif_DF["difference"],\
+    temp_dif_graph.circle(tempdif_DF['YYYYMMDD'], tempdif_DF['difference'],\
                           legend = "Temperature difference in 2 days",\
                           size = 5,\
                           color = tempdif_DF["colours"],\
