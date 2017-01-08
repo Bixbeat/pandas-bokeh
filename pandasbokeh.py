@@ -150,6 +150,7 @@ for station_number in unique_station_numbers:
     try:
         highest_tempdif_row = tempdif_DF.loc[tempdif_DF['difference'] == biggest_tempdif_value]
         highest_tempdif_date = str(highest_tempdif_row.iloc[0][0])
+
     except:
         biggest_tempdif_formatted = "no data"
         highest_tempdif_date = "no data"
@@ -172,16 +173,23 @@ for station_number in unique_station_numbers:
     
     #Assign the tools and create the plot
     tools = [BoxSelectTool(), WheelZoomTool(), PanTool(), hover]    
-    temp_dif_graph = figure(title = "temp. change at station {}".format(station_number),\
-        x_axis_label = 'year', y_axis_label = 'temperature difference', tools = tools)
+    temp_dif_graph = figure(title = "temp. change at station {} in 2 days".format(station_number),\
+                            x_axis_label = 'year',
+                            y_axis_label = 'temperature difference',
+                            tools = tools,
+                            plot_width=300,
+                            plot_height=300)
 
-    temp_dif_graph.circle(tempdif_DF['YYYYMMDD'], tempdif_DF['difference'],\
-                          legend = "Temperature difference in 2 days",\
-                          size = 5,\
-                          color = tempdif_DF["colours"],\
-                          alpha = 0.5)
+    temp_dif_graph.circle(tempdif_DF['YYYYMMDD'], tempdif_DF['difference'],
+                          size = 8,
+                          color = tempdif_DF["colours"],
+                          alpha = 1.0)
 
     #Set years to x-axis (http://stackoverflow.com/questions/33869292/how-can-i-set-the-x-axis-as-datetimes-on-a-bokeh-plot)
+    #Bokeh gets a bit strange with datetime ticks. I had to set months to the year value before it worked with a
+    #subselection of the dataframe. If you want to analyse the entire dataframe once, comment out the top line and uncomment the bottom one.
+    
+    #temp_dif_graph.xaxis.formatter=DatetimeTickFormatter(formats=dict(months=["%Y"]))
     temp_dif_graph.xaxis.formatter=DatetimeTickFormatter(formats=dict(years=["%Y"]))
     
     #Generate HTML for the plot
@@ -204,8 +212,8 @@ for station_number in unique_station_numbers:
              '''.format(stn = max_wind_speed_list[0],\
                    fg = max_wind_speed_value)\
                    + weather_dif_graph_html,\
-        width=700, height=700),\
-        max_width=700)).add_to(weather_stations_map)
+        width=350, height=350),\
+        max_width=350)).add_to(weather_stations_map)
 
 if save_map == True:    
     weather_stations_map.save('weather_stations_map.html')
